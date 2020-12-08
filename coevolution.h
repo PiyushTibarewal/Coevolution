@@ -293,10 +293,10 @@ class ActivityProcess:public Process {
 
 	double_t getSample(double_t curTime) {
 		if (src == dst) {
-			return curTime + rng.exponential(model.eta[0].at(src));
+			return curTime + rng.exponential(model.eta[0].at(src)+model.eta[1].at(src)*network.adj_out[src].size());
 		} else {
 			double_t t = curTime;
-			double_t I1 = model.beta[0].at(src)*phi(t, curTime);
+			double_t I1 = (model.beta[0].at(src)+model.beta[1].at(src)*network.adj_out[src].size())*phi(t, curTime);
 			while (1) {
 				t += rng.exponential(I1);
 				//if (params.mu_mean*t > params.sparsity)
@@ -310,7 +310,7 @@ class ActivityProcess:public Process {
 						return t;
 				}
 
-				double_t I2 = model.beta[0].at(src)*phi(t, curTime);
+				double_t I2 = (model.beta[0].at(src)+model.beta[1].at(src)*network.adj_out[src].size())*phi(t, curTime);
 				double_t u = rng.uniform(0,1);
 				if (u * I1 < I2) 
 					return t;
@@ -327,7 +327,7 @@ ActivityProcess::~ActivityProcess() {}
 ActivityProcess::ActivityProcess(size_t src, size_t dst):
 	Process(src, dst) {
 	if (src == dst) 
-		intensity =  model.eta[0][src];
+		intensity =  (model.eta[0][src]+model.eta[1].at(src)*network.adj_out[src].size());
 	else
 		intensity = 0;
 	prev_intensity_time = 0;
@@ -336,18 +336,18 @@ ActivityProcess::ActivityProcess(size_t src, size_t dst):
 void ActivityProcess::updateIntensity(ActivityEvent* activityEvent) {
 	getIntensity(activityEvent->t);
 	if (activityEvent->uid != dst) {
-		intensity += model.beta[0][activityEvent->sid];
+		intensity += model.beta[0][activityEvent->sid]+model.beta[1].at(activityEvent->sid)*network.adj_out[activityEvent->sid].size();
 	}
 }
 
 double_t ActivityProcess::getIntensity(double_t time) {
 	if (src == dst)
-		intensity -= model.eta[0][src];
+		intensity -= model.eta[0][src]+model.eta[1].at(src)*network.adj_out[src].size();
 
 	intensity *= phi(time, prev_intensity_time)/model.omega_phi;
 
 	if (src == dst)
-		intensity += model.eta[0][src];
+		intensity += model.eta[0][src]+model.eta[1].at(src)*network.adj_out[src].size();
 
 	prev_intensity_time = time;
 
@@ -367,7 +367,7 @@ class LinkProcess:public Process {
 LinkProcess::LinkProcess(size_t src, size_t dst):
 	Process(src, dst) {
 	if (src != dst) 
-		intensity = model.mu[0][src];
+		intensity = model.mu[0][src]+model.mu[1].at(src)*network.adj_out[src].size();
 
 }
 
@@ -380,12 +380,12 @@ double_t LinkProcess::getIntensity(double_t time) {
 	intensity -= model.mu[0][src];
 	if (intensity < 0.00000001) {
 		prev_intensity_time = time;
-		intensity = model.mu[0][src];
+		intensity = model.mu[0][src]+model.mu[1].at(src)*network.adj_out[src].size();
 		return intensity;
 	}
 	intensity *= kappa(time, prev_intensity_time)/model.omega_kap;
 
-	intensity += model.mu[0][src];
+	intensity += model.mu[0][src]+model.mu[1].at(src)*network.adj_out[src].size();
 
 	prev_intensity_time = time;
 	return intensity;	
@@ -393,7 +393,7 @@ double_t LinkProcess::getIntensity(double_t time) {
 
 void LinkProcess::updateIntensity(ActivityEvent* activityEvent) {
 	getIntensity(activityEvent->t);
-	intensity += model.alpha[0][activityEvent->sid];
+	intensity += model.alpha[0][activityEvent->sid]+model.alpha[1].at(activityEvent->sid)*network.adj_out[activityEvent->sid].size();
 }
 
 class UpdatableHeap {
