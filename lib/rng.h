@@ -160,7 +160,7 @@ class RNG
   void zigset();
 
   void init()
-    { z = w = jsr = jcong = ulong(time(0)) + tm; tm += 123457; }
+    { z = w = jsr = jcong = ulong((1)) + tm; tm += 123457; }
   void init(ulong z_, ulong w_, ulong jsr_, ulong jcong_ )
     { z = z_; w = w_; jsr = jsr_; jcong = jcong_; }
 

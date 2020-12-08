@@ -44,25 +44,25 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-
-	model.mu.resize(params.node_count);
-	model.alpha.resize(params.node_count);
-	model.eta.resize(params.node_count);
-	model.beta.resize(params.node_count);
-
+	model.num_features = 1;
+	model.mu.resize(model.num_features, vector<double_t>(params.node_count));
+	model.alpha.resize(model.num_features, vector<double_t>(params.node_count));
+	model.eta.resize(model.num_features, vector<double_t>(params.node_count));
+	model.beta.resize(model.num_features, vector<double_t>(params.node_count));
+	
 	if (params.random_params)  {
 		for (int i=0; i < params.node_count; i++) {
-			model.mu[i] = rng.uniform(0,mu_mean*2);
-			model.alpha[i] = rng.uniform(0,alpha_mean*2);
-			model.eta[i] = rng.uniform(0,eta_mean*2);
-			model.beta[i] = rng.uniform(0,beta_mean*2);
+			model.mu[0][i] = rng.uniform(0,mu_mean*2);
+			model.alpha[0][i] = rng.uniform(0,alpha_mean*2);
+			model.eta[0][i] = rng.uniform(0,eta_mean*2);
+			model.beta[0][i] = rng.uniform(0,beta_mean*2);
 		}
 	} else {
 		for (int i = 0; i < params.node_count; i++) {
-			model.mu[i] = mu_mean;
-			model.alpha[i] = alpha_mean;
-			model.eta[i] = eta_mean;
-			model.beta[i] = beta_mean;
+			model.mu[0][i] = mu_mean;
+			model.alpha[0][i] = alpha_mean;
+			model.eta[0][i] = eta_mean;
+			model.beta[0][i] = beta_mean;
 		}
 	}
 	params.mu_mean = mu_mean;

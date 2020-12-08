@@ -9,7 +9,7 @@
 
 using namespace std;
 
-typedef vector<double_t> doubles_t;
+typedef vector<vector<double_t> > doubles_t;
 typedef vector<int> ints;
 typedef pair<int, double> intdouble_t;
 typedef std::vector<intdouble_t> intdoubles_t;
@@ -36,6 +36,7 @@ struct Model {
 	doubles_t beta;
 	double_t omega_phi;
 	double_t omega_kap;
+	int num_features;
 	Model(){};
 };
 
@@ -43,8 +44,8 @@ ostream& operator<< (ostream &out, const Model& model){
 	out << "w_phi" << tab << "w_kap" << tab << "dummy" << tab << "dummy" << newline;
 	out << model.omega_phi << tab << model.omega_kap << tab << -1 << tab << -1 << newline;
 	out << "mu" << tab << "alpha" << tab << "eta" << tab << "beta" << newline;
-	for (size_t i=0; i < model.mu.size(); i++) {
-		out << model.mu[i] << tab << model.alpha[i] << tab << model.eta[i] << tab << model.beta[i] << newline;
+	for (size_t i=0; i < model.mu[0].size(); i++) {
+		out << model.mu[0][i] << tab << model.alpha[0][i] << tab << model.eta[0][i] << tab << model.beta[0][i] << newline;
 	}
 	return out;
 }
@@ -114,7 +115,7 @@ class Network {
 	public:
 	vector<ints> adj_in;
 	vector<ints> adj_out;
-	doubles_t creation_time;
+	vector<double_t> creation_time;
 	int size;;
 
 	void setSize(int size);
@@ -225,12 +226,12 @@ static inline int dcmp(double x) {
 	return x<-eps?-1:x>eps;
 }
 
-size_t sample(doubles_t& d, double sum) {
-	double_t u = rng.uniform(0, sum);    
-	size_t i=0;
-	for(;dcmp(u-d[i])>0 && i<d.size();i++) u-=d[i];
-	return (i>=d.size())?d.size()-1:i;
-}
+// size_t sample(doubles_t& d, double sum) {
+// 	double_t u = rng.uniform(0, sum);    
+// 	size_t i=0;
+// 	for(;dcmp(u-d[i])>0 && i<d.size();i++) u-=d[i];
+// 	return (i>=d.size())?d.size()-1:i;
+// }
 
 class Process {
 	protected:
@@ -292,10 +293,10 @@ class ActivityProcess:public Process {
 
 	double_t getSample(double_t curTime) {
 		if (src == dst) {
-			return curTime + rng.exponential(model.eta.at(src));
+			return curTime + rng.exponential(model.eta[0].at(src));
 		} else {
 			double_t t = curTime;
-			double_t I1 = model.beta.at(src)*phi(t, curTime);
+			double_t I1 = model.beta[0].at(src)*phi(t, curTime);
 			while (1) {
 				t += rng.exponential(I1);
 				//if (params.mu_mean*t > params.sparsity)
@@ -309,7 +310,7 @@ class ActivityProcess:public Process {
 						return t;
 				}
 
-				double_t I2 = model.beta.at(src)*phi(t, curTime);
+				double_t I2 = model.beta[0].at(src)*phi(t, curTime);
 				double_t u = rng.uniform(0,1);
 				if (u * I1 < I2) 
 					return t;
@@ -326,7 +327,7 @@ ActivityProcess::~ActivityProcess() {}
 ActivityProcess::ActivityProcess(size_t src, size_t dst):
 	Process(src, dst) {
 	if (src == dst) 
-		intensity =  model.eta[src];
+		intensity =  model.eta[0][src];
 	else
 		intensity = 0;
 	prev_intensity_time = 0;
@@ -335,18 +336,18 @@ ActivityProcess::ActivityProcess(size_t src, size_t dst):
 void ActivityProcess::updateIntensity(ActivityEvent* activityEvent) {
 	getIntensity(activityEvent->t);
 	if (activityEvent->uid != dst) {
-		intensity += model.beta[activityEvent->sid];
+		intensity += model.beta[0][activityEvent->sid];
 	}
 }
 
 double_t ActivityProcess::getIntensity(double_t time) {
 	if (src == dst)
-		intensity -= model.eta[src];
+		intensity -= model.eta[0][src];
 
 	intensity *= phi(time, prev_intensity_time)/model.omega_phi;
 
 	if (src == dst)
-		intensity += model.eta[src];
+		intensity += model.eta[0][src];
 
 	prev_intensity_time = time;
 
@@ -366,7 +367,7 @@ class LinkProcess:public Process {
 LinkProcess::LinkProcess(size_t src, size_t dst):
 	Process(src, dst) {
 	if (src != dst) 
-		intensity = model.mu[src];
+		intensity = model.mu[0][src];
 
 }
 
@@ -376,15 +377,15 @@ double_t LinkProcess::getIntensity(double_t time) {
 	if (src == dst || network.hasLink(src,dst))
 		return 0;
 
-	intensity -= model.mu[src];
+	intensity -= model.mu[0][src];
 	if (intensity < 0.00000001) {
 		prev_intensity_time = time;
-		intensity = model.mu[src];
+		intensity = model.mu[0][src];
 		return intensity;
 	}
 	intensity *= kappa(time, prev_intensity_time)/model.omega_kap;
 
-	intensity += model.mu[src];
+	intensity += model.mu[0][src];
 
 	prev_intensity_time = time;
 	return intensity;	
@@ -392,7 +393,7 @@ double_t LinkProcess::getIntensity(double_t time) {
 
 void LinkProcess::updateIntensity(ActivityEvent* activityEvent) {
 	getIntensity(activityEvent->t);
-	intensity += model.alpha[activityEvent->sid];
+	intensity += model.alpha[0][activityEvent->sid];
 }
 
 class UpdatableHeap {
