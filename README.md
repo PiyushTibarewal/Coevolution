@@ -1,4 +1,5 @@
 # Coevolution
+This work is extended to drow plots and features to the intensity function as a part of project for CS 768 Learning with Graphs.
 This repository contains the codes for the paper **"Coevolve: A joint point process model for information diffusion and network co-evolution."** 
 Mehrdad Farajtabar, Yichen Wang, Manuel Gomez-Rodriguez, Shuang Li, Hongyuan Zha, and Le Song.
 In Advances in Neural Information Processing Systems, pp. 1945-1953. 2015.
